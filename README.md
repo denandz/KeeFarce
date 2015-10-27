@@ -1,6 +1,6 @@
 # KeeFarce
 
-![KeeFarce](http://i.imgur.com/YewOPts.png)
+![KeeFarce](http://i.imgur.com/YewOPts.png =225x230)
 
 KeeFarce allows for the extraction of KeePass 2.x password database information from memory. The cleartext information, including usernames, passwords, notes and url's are dumped into a CSV file in %AppData%
 
