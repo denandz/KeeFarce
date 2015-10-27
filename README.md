@@ -1,6 +1,6 @@
 # KeeFarce
 
-KeeFarce allows for the extraction of KeePass password database information from memory. The cleartext information, including usernames, passwords, notes and url's are dumped into a CSV file in %AppData%
+KeeFarce allows for the extraction of KeePass 2.x password database information from memory. The cleartext information, including usernames, passwords, notes and url's are dumped into a CSV file in %AppData%
 
 ## General Design
 
@@ -30,7 +30,7 @@ Open up the KeeFarce.sln with Visual Studio (note: dev was done on Visual Studio
 ## Compatibility
 KeeFarce has been tested on: 
 
-KeePass 2.28, 2.29 and 2.30 - running on Windows 8.1 - both 32 and 64 bit.
+* KeePass 2.28, 2.29 and 2.30 - running on Windows 8.1 - both 32 and 64 bit.
 
 This should also work on older Windows machines (win 7 with a recent service pack). If you're targeting something other than the above, then testing in a lab environment before hand is recommended.
 
