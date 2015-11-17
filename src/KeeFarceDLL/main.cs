@@ -13,6 +13,7 @@ namespace KeeFarceDLL
 
         public static int EntryPoint(string pwzArgument)
         {
+            Debug.WriteLine("[KeeFarceDLL] Starting");
             //string processName = Process.GetCurrentProcess().ProcessName;
             //MessageBox.Show("The current process is " + processName + " and I am running C# code! Yuss!");
 
@@ -35,7 +36,9 @@ namespace KeeFarceDLL
                 ClrHeap heap = runtime.GetHeap();
                 foreach (ulong obj in heap.EnumerateObjects())
                 {
+                    
                     ClrType type = heap.GetObjectType(obj);
+                    
                     ulong size = type.GetSize(obj);
                     if (type.Name == "KeePass.UI.DocumentManagerEx")
                     {
@@ -56,73 +59,12 @@ namespace KeeFarceDLL
             // Get the DocumentManagerEx object
             Converter<object> ptrconv = new Converter<object>();
             object documentManagerEx = ptrconv.ConvertFromIntPtr(docManagerPtr);
+            var info = new DocumentManagerExInfo(documentManagerEx);
+            int r = doExport(info.ActiveDatabase, info.RootGroup, exportFile);
 
-            // retrieve the pointers for the Active Database and Root Group
-            IntPtr activeDbPtr = getActiveDbPtr(docManagerPtr);
-            IntPtr rootGroupPtr = getRootGroupPtr(activeDbPtr);
-            if ((activeDbPtr == IntPtr.Zero) || (rootGroupPtr == IntPtr.Zero))
-            {
-                Debug.WriteLine("[KeeFarceDLL] activeDb or rootGroup returned nada");
-                return 1;
-            }
-            object activeDatabase = ptrconv.ConvertFromIntPtr(activeDbPtr);
-            object rootGroup = ptrconv.ConvertFromIntPtr(getRootGroupPtr(activeDbPtr));
-
-            // At this point we have all the objects we need, time to export stuff
-            int r = doExport(activeDatabase, rootGroup, exportFile);
-
-            return 0;
+            return r;
         }
-
-        // TODO: Remove. This was only used for debugging.
-        unsafe static private IntPtr getPtr(object targetObj)
-        {
-            TypedReference tr = __makeref(targetObj);
-            IntPtr ptr = **(IntPtr**)&tr;
-            return ptr;
-        }
-
-        /* The below methods are responsible for finding the offsets to the various
-        *   objects required by the export method. If these change with future 
-        *   releases, then the below need to be update. 
-        *
-        *   Information on finding the offsets is available at https://www.github.com/denandz/keefarce
-        */
-        unsafe static private IntPtr getActiveDbPtr(IntPtr docmgr)
-        {
-            IntPtr activeDb, dsActive = IntPtr.Zero;
-            if (is64Bit)
-            {
-                dsActive = *(IntPtr*)(docmgr + 0x10);
-                activeDb = *(IntPtr*)(dsActive + 0x8);
-                
-            } 
-            else
-            {
-                dsActive = *(IntPtr*)(docmgr + 0x8);
-                activeDb = *(IntPtr*)(dsActive + 0x4);
-            }
-
-            Debug.WriteLine("[KeeFarceDLL] dsActive: " + dsActive.ToString("X"));
-            Debug.WriteLine("[KeeFarceDLL] activeDb: " + activeDb.ToString("X"));
-            return activeDb;
-        }
-
-        unsafe static private IntPtr getRootGroupPtr(IntPtr activeDb)
-        {
-            IntPtr rootGroup = IntPtr.Zero;
-            if (is64Bit)
-            {
-                rootGroup = *(IntPtr*)(activeDb + 0x8);
-            }
-            else
-            {
-                rootGroup = *(IntPtr*)(activeDb + 0x24);
-            }
-            Debug.WriteLine("[KeeFarceDLL] Got root group: " + rootGroup.ToString("X"));
-            return rootGroup;
-        }
-
+       
         private static int doExport(object activeDb, object rootGroup, string exportFile)
         {
             // Get type from the current assembly
@@ -203,6 +145,41 @@ namespace KeeFarceDLL
             else
             {
                 return target.CreateRuntime(dacLocation);
+            }
+        }
+
+        private class DocumentManagerExInfo
+        {
+            private const string ActiveDocumentName = "ActiveDocument";
+            private const string ActiveDatabaseName = "ActiveDatabase";
+            private const string RootGroupName = "RootGroup";
+
+            private readonly object documentManagerEx;
+            public object ActiveDocument { get; private set; }
+            public object ActiveDatabase { get; private set; }
+            public object RootGroup { get; private set; }
+
+            public DocumentManagerExInfo(object documentManagerEx)
+            {
+                if (documentManagerEx == null)
+                {
+                    throw new ArgumentNullException("documentManagerEx");
+                }
+                this.documentManagerEx = documentManagerEx;
+
+                Type documentType = documentManagerEx.GetType();
+
+                var property = documentType.GetProperty(ActiveDatabaseName);
+                ActiveDatabase = property.GetValue(documentManagerEx, null);
+
+                property = documentType.GetProperty(ActiveDocumentName);
+                ActiveDocument = property.GetValue(documentManagerEx, null);
+
+                Type databaseType = ActiveDatabase.GetType();
+                property = databaseType.GetProperty(RootGroupName);
+                RootGroup = property.GetValue(ActiveDatabase, null);
+
+                Debug.WriteLine(string.Format("[KeeFarceDLL] Created DocumentManagerExInfo Got Database={0}; Got RootGroup={1}", ActiveDatabase != null, RootGroup != null));
             }
         }
 
