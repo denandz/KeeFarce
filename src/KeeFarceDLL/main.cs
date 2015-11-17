@@ -3,7 +3,6 @@ using System.IO;
 using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Diagnostics.Runtime;
-using System.Windows.Forms;
 
 namespace KeeFarceDLL
 {
